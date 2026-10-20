@@ -149,3 +149,8 @@ class Follower:
         parts = data.split(b"\n")
         self._partial = parts.pop()
         return truncated, [p.decode("utf-8", errors="replace").rstrip("\r") for p in parts]
+
+    @property
+    def resume_offset(self) -> int:
+        """Where a reconnecting client continues: the start of the unfinished line, which hasn't been sent yet."""
+        return self.offset - len(self._partial)

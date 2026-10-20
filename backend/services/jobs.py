@@ -217,17 +217,20 @@ class ProcessRunner:
         if self.cancelled:
             raise Cancelled("Cancelled by the user.")
 
+    def start(self, args: list[str], **popen_args) -> subprocess.Popen:
+        """Start the job's next child process (refused once cancelled); cancel() kills its tree."""
+        with self._lock:
+            self.check()
+            self._proc = subprocess.Popen(args, creationflags=subprocess.CREATE_NO_WINDOW, **popen_args)
+            return self._proc
+
     def run(self, args: list[str], cwd: Path | None, on_line: LogFn, env: dict | None = None,
             on_progress: LogFn | None = None) -> int:
         """Blocking: run to completion, streaming merged stdout/stderr lines. Returns the exit code.
 
         With on_progress, text ended by a carriage return (progress meters such as git's
         "Receiving objects:  45%") goes there live instead of being logged as lines."""
-        self.check()
-        with self._lock:
-            self._proc = subprocess.Popen(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                                          stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW)
-            proc = self._proc
+        proc = self.start(args, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
         try:
             assert proc.stdout is not None
             if on_progress is None:

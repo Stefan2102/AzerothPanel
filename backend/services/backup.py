@@ -65,6 +65,12 @@ def option_file(info: DbInfo, folder: Path) -> Path:
     return Path(path)
 
 
+def dump_command(mysqldump: Path, database: str) -> list[str]:
+    """mysqldump of one database that recreates it on import (the login goes in an option file)."""
+    return [str(mysqldump), "--single-transaction", "--routines", "--triggers", "--events", "--no-tablespaces",
+            "--hex-blob", "--default-character-set=utf8mb4", "--databases", database]
+
+
 def _run_mysql_tool(args: list[str], info: DbInfo, stdin=None, stdout=None) -> None:
     opt = option_file(info, DATA_DIR)
     try:
@@ -193,9 +199,7 @@ def run_backup(cfg: ServerConfig, mysql_dir: Path | None, dest: dict, include: d
                     out = work / f"{info.database}.sql"
                     log(f"  Dumping {info.database}…")
                     with out.open("wb") as f:
-                        _run_mysql_tool([str(dump), "--single-transaction", "--routines", "--triggers", "--events",
-                                         "--no-tablespaces", "--hex-blob", "--default-character-set=utf8mb4",
-                                         "--databases", info.database], info, stdout=f)
+                        _run_mysql_tool(dump_command(dump, info.database), info, stdout=f)
                     log(f"  ✓ {info.database}: {out.stat().st_size // 1024} KB, compressing…")
                     zf.write(out, f"databases/{out.name}")
                     out.unlink()
@@ -217,16 +221,6 @@ def run_backup(cfg: ServerConfig, mysql_dir: Path | None, dest: dict, include: d
     log(f"[INFO] Archive size: {size // 1024} KB")
     log(f"[INFO] Saved to {final}")
     return name, size
-
-
-def archive_contents(path: Path) -> dict:
-    with zipfile.ZipFile(path) as zf:
-        names = zf.namelist()
-    return {
-        "configs": any(n.startswith("configs/") for n in names),
-        "databases": any(n.startswith("databases/") for n in names),
-        "binaries": any(n.startswith("binaries/") for n in names),
-    }
 
 
 # ---- restore --------------------------------------------------------------------------------

@@ -148,6 +148,9 @@ class ServerManager:
         self._last_external_scan = 0.0
         self._last_sample = 0.0
         self._cpu_count = psutil.cpu_count() or 1
+        # Why a service may not start right now (another job is replacing its files or database), or None.
+        # Set by the app, which knows the build / data / backup jobs.
+        self.start_guard: Callable[[str], str | None] = lambda key: None
 
     # ---- configuration -------------------------------------------------------------
 
@@ -301,10 +304,6 @@ class ServerManager:
         if self.job:
             self.job["step"] = text
 
-    async def wait_job(self) -> None:
-        if self._job_task:
-            await asyncio.shield(self._job_task)
-
     # ---- start ----------------------------------------------------------------------
 
     async def start(self, key: str) -> None:
@@ -313,6 +312,8 @@ class ServerManager:
             raise ServiceError("MySQL is not managed by the panel (no MySQL folder chosen on Setup -> Requirements).")
         if svc.state != "stopped" or svc.is_up():
             raise ServiceError(f"{svc.label} is already {svc.state}.")
+        if reason := self.start_guard(key):
+            raise ServiceError(reason)
         cfg = self.config()
         host, port = self._endpoint(key, cfg)
         if await port_open(host, port):

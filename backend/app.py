@@ -20,6 +20,24 @@ from .services.server_manager import ServerManager, ServiceError
 from .settings import Settings
 
 
+def _start_blocked(app: FastAPI, key: str) -> str | None:
+    """A server must not start while a job replaces what it uses: a deploy (exes, DLLs, configs),
+    a restore (databases, configs, binaries) or a client data job (worldserver's maps and DBC files).
+    The jobs themselves only check at their start that the servers are stopped."""
+    if key == "mysql":
+        return None
+    build = app.state.build_slot.running()
+    if build and build.get("step") == "deploy":
+        return "A deploy is replacing the server files. Start the servers after it has finished."
+    task = app.state.backup_task
+    if task and not task.done() and any(j["status"] == "running" and j.get("type") == "restore"
+                                        for j in app.state.backup_store.jobs()):
+        return "A restore is running. Start the servers after it has finished."
+    if key == "world" and app.state.data_slot.busy():
+        return "A client data job is replacing worldserver's data. Start it after the job has finished."
+    return None
+
+
 def create_app(initial_settings: Settings, control_token: str) -> FastAPI:
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -52,6 +70,7 @@ def create_app(initial_settings: Settings, control_token: str) -> FastAPI:
     app.state.source_slot = JobSlot(clone.new_store())
     app.state.sqlimport_slot = JobSlot(sql_import.new_store())
     app.state.request_exit = lambda: None   # replaced by __main__ once uvicorn is created
+    app.state.manager.start_guard = lambda key: _start_blocked(app, key)
 
     @app.exception_handler(ServiceError)
     async def service_error(_: Request, exc: ServiceError):

@@ -15,8 +15,8 @@ from typing import Callable
 
 from ..acconf import DbInfo
 from ..paths import BACKUP_DIR, DATA_DIR
-from .backup import find_mysql_tool, option_file
-from .jobs import Cancelled, JobError, JobStore, LogFn, decode_line, kill_tree
+from .backup import dump_command, find_mysql_tool, option_file
+from .jobs import JobError, JobStore, LogFn, ProcessRunner, decode_line
 
 CHUNK = 1024 * 1024
 MAX_SIZE = 4 * 1024 ** 3          # 4 GB; larger files are better imported by hand
@@ -43,26 +43,10 @@ class ImportJob:
                  log: LogFn, progress: Callable[[dict], None]) -> None:
         self.info, self.mysql_dir, self.file, self.force, self.backup = info, mysql_dir, file, force, backup
         self.log, self._progress = log, progress
-        self._proc: subprocess.Popen | None = None
-        self._lock = threading.Lock()
-        self.cancelled = False
+        self.runner = ProcessRunner()           # mysqldump, then mysql.exe; cancel kills the running one
 
     def cancel(self) -> None:
-        with self._lock:
-            self.cancelled = True
-            proc = self._proc
-        if proc and proc.poll() is None:
-            kill_tree(proc.pid)
-
-    def _check(self) -> None:
-        if self.cancelled:
-            raise Cancelled("Cancelled by the user.")
-
-    def _start(self, args: list[str], **kw) -> subprocess.Popen:
-        with self._lock:
-            self._check()
-            self._proc = subprocess.Popen(args, creationflags=subprocess.CREATE_NO_WINDOW, **kw)
-            return self._proc
+        self.runner.cancel()
 
     def _tool(self, name: str) -> Path:
         exe = find_mysql_tool(self.mysql_dir, name)
@@ -77,13 +61,11 @@ class ImportJob:
         self.log(f"[step] Backing up {self.info.database} to {target}")
         opt = option_file(self.info, DATA_DIR)
         try:
+            exe, *args = dump_command(self._tool("mysqldump"), self.info.database)
             with target.open("wb") as out:
-                proc = self._start([str(self._tool("mysqldump")), f"--defaults-extra-file={opt}", "--single-transaction",
-                                    "--routines", "--triggers", "--events", "--no-tablespaces", "--hex-blob",
-                                    "--default-character-set=utf8mb4", "--databases", self.info.database],
-                                   stdout=out, stderr=subprocess.PIPE)
+                proc = self.runner.start([exe, f"--defaults-extra-file={opt}", *args], stdout=out, stderr=subprocess.PIPE)
                 _, err = proc.communicate()
-            self._check()
+            self.runner.check()
             if proc.returncode != 0:
                 raise JobError(f"The backup failed, nothing was imported: {err.decode(errors='replace').strip()}")
         except BaseException:
@@ -102,7 +84,7 @@ class ImportJob:
         errors: list[str] = []
         opt = option_file(self.info, DATA_DIR)
         try:
-            proc = self._start([str(self._tool("mysql")), f"--defaults-extra-file={opt}", "--default-character-set=utf8mb4",
+            proc = self.runner.start([str(self._tool("mysql")), f"--defaults-extra-file={opt}", "--default-character-set=utf8mb4",
                                 *(["--force"] if self.force else []), self.info.database],
                                stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
@@ -121,7 +103,7 @@ class ImportJob:
             try:
                 with self.file.open("rb") as f:
                     while chunk := f.read(CHUNK):
-                        self._check()
+                        self.runner.check()
                         proc.stdin.write(chunk)
                         done += len(chunk)
                         if time.monotonic() - last > 0.5:
@@ -135,7 +117,7 @@ class ImportJob:
             reader.join(10)
         finally:
             opt.unlink(missing_ok=True)
-        self._check()
+        self.runner.check()
         if code != 0 and not self.force:
             raise JobError(f"MySQL stopped at the first error: {errors[-1] if errors else f'exit code {code}'}. "
                            "Everything before it was already imported.")

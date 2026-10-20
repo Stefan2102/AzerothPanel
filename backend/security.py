@@ -33,10 +33,24 @@ def _write_private(path, data: bytes) -> None:
     os.replace(tmp, path)
 
 
+_secret_key: bytes | None = None     # data/secret.key, kept in memory: it is read on every request
+
+
 def _secret() -> bytes:
-    if not SECRET_FILE.is_file():
-        _write_private(SECRET_FILE, secrets.token_bytes(32))
-    return SECRET_FILE.read_bytes()
+    global _secret_key
+    if _secret_key is None:
+        if not SECRET_FILE.is_file():
+            _write_private(SECRET_FILE, secrets.token_bytes(32))
+        _secret_key = SECRET_FILE.read_bytes()
+    return _secret_key
+
+
+def _new_secret() -> None:
+    """Replace the signing key: every existing session becomes invalid."""
+    global _secret_key
+    key = secrets.token_bytes(32)
+    _write_private(SECRET_FILE, key)
+    _secret_key = key
 
 
 # ---- account ---------------------------------------------------------------
@@ -91,7 +105,7 @@ def change_password(password: str) -> None:
         raise ValueError("Choose a password other than the default.")
     _write_account(username(), password)
     # New signing key: every other session (other browsers, other devices) is signed out.
-    _write_private(SECRET_FILE, secrets.token_bytes(32))
+    _new_secret()
 
 
 def default_password_in_use() -> bool:

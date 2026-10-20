@@ -56,6 +56,11 @@ authserver (Ctrl-Break). No console or GM command access for external processes.
 ## Rules enforced by `ServerManager`
 - Start order MySQL → auth → world; each waits until its port accepts connections.
 - Refuses to start if the port is already taken, or auth/world while MySQL is unreachable.
+- Refuses to start auth/world while a job replaces what they use: a deploy step, a restore, or (world only)
+  a client data job (`start_guard`, set in `app.py`). Those jobs check only at their start that the servers
+  are stopped, so this closes the gap while they run.
+- Stop is disabled while a service is still starting: the start is the running lifecycle job, and worldserver
+  can't take `server shutdown` before it has loaded. Force kill stays available.
 - Refuses to stop MySQL while auth or world is up.
 - One lifecycle job at a time; stop timeouts never escalate to a kill — the user decides (Force kill).
 - Panel shutdown (stop.bat or the sidebar button) stops everything the panel started in safe order

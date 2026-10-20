@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   CheckCircle2, ChevronLeft, ChevronRight, Download, ExternalLink, GitBranch, GitFork, Hammer, Link2Off, Loader2, RefreshCw, Search, Star, Trash2, X,
 } from "lucide-react";
-import { del, get, post, type Status } from "../lib/api";
+import { ApiError, del, get, post, type Status } from "../lib/api";
 import { date, dateTime } from "../lib/format";
 import { useStatus } from "../lib/hooks";
 import { type JobBase } from "../components/JobOutput";
@@ -368,15 +368,21 @@ export function Modules() {
   const busy = !!runningId || !!status?.build;
 
   // No output box: follow the started job quietly, then report it as a toast and refresh the lists.
+  // Keeps following on another page (the toast still comes); gives up when signed out, when the job is gone,
+  // or when the panel stays unreachable for 5 minutes.
   const started = async (id: number) => {
     qc.invalidateQueries({ queryKey: ["status"] });
     let job: ModuleJob | null = null;
+    let unreachableSince: number | null = null;
     for (;;) {
       try {
         job = await get<ModuleJob>(`/api/modules/jobs/${id}?after=999999999`);
+        unreachableSince = null;
         if (job.status !== "running") break;
-      } catch {
-        /* panel restarting: try again */
+      } catch (e) {
+        if (e instanceof ApiError) return;                       // signed out or job gone: nothing to report
+        unreachableSince ??= Date.now();                         // panel restarting: try again for a while
+        if (Date.now() - unreachableSince > 5 * 60_000) return;
       }
       await new Promise((r) => setTimeout(r, 1000));
     }

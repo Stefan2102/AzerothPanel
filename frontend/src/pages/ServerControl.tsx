@@ -15,7 +15,7 @@ function Controls({ s }: { s: ServiceStatus }) {
       <Button size="sm" variant="success" icon={<Play className="size-3.5" />} disabled={up || busy} onClick={() => actions.start(s.key, s.label)}>
         Start
       </Button>
-      <Button size="sm" variant="danger" icon={<Square className="size-3.5" />} disabled={!up && s.state !== "starting"} onClick={() => actions.stop(s.key, s.label)}>
+      <Button size="sm" variant="danger" icon={<Square className="size-3.5" />} disabled={!up} title={s.state === "starting" ? "Wait until it has started (or use Force kill)" : undefined} onClick={() => actions.stop(s.key, s.label)}>
         Stop
       </Button>
       <Button size="sm" icon={<RotateCw className="size-3.5" />} disabled={!up} onClick={() => actions.restart(s.key, s.label)}>

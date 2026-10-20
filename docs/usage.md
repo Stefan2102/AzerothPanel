@@ -55,7 +55,8 @@
   flags include 2, so with flags 0 most lines count as INFO (DB Errors lines count as ERROR). Search,
   Live/Disconnected, Clear (view only), Download, Auto-scroll, Load older lines.
 - Database: table browser + SQL runner. Only single `SELECT/SHOW/DESCRIBE/EXPLAIN/WITH` statements, and
-  they run inside a `READ ONLY` transaction (MySQL itself rejects writes), 15 s limit, 1000 rows.
+  they run inside a `READ ONLY` transaction (MySQL itself rejects writes), 15 s limit, 1000 rows. Rows are
+  streamed and only the first 1001 are read, so a huge result never fills the panel's memory.
 - Backup & Restore (three tabs, like the reference panel):
   - Destinations: local folders (PC, USB, mapped network drive). "Default Local Storage" is the repo's
     `backups` folder and can't be removed. Test checks the folder is writable and shows free space.

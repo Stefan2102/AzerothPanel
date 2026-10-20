@@ -113,14 +113,6 @@ class ConPtyProcess:
     def write(self, text: str) -> None:
         self._pty.write(text)
 
-    def kill_tree(self) -> None:
-        """Hard kill. Only ever called on an explicit, confirmed user request."""
-        for proc in self.processes():
-            try:
-                proc.kill()
-            except psutil.NoSuchProcess:
-                pass
-
     def close(self) -> None:
         """Release the pseudo console. Call only after the process tree has exited,
         because closing a pseudo console terminates everything still attached to it."""

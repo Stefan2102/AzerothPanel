@@ -68,19 +68,24 @@ def quote_ident(name: str) -> str:
 
 
 def _run_readonly(info: DbInfo, sql: str, max_rows: int, timeout_ms: int) -> dict:
-    """Run a user query inside a READ ONLY transaction (the server rejects any write)."""
+    """Run a user query inside a READ ONLY transaction (the server rejects any write).
+
+    Rows are streamed (unbuffered cursor) and only max_rows + 1 are read, so a huge result never
+    lands in the panel's memory. When rows are left over, the connection is closed without reading
+    them: MySQL then rolls the transaction back itself."""
     conn = connect(info)
     try:
-        with conn.cursor(pymysql.cursors.Cursor) as cur:
-            cur.execute("SET SESSION max_execution_time = %s", (timeout_ms,))
-            cur.execute("START TRANSACTION READ ONLY")
-            started = dt.datetime.now()
-            cur.execute(sql)
-            columns = [d[0] for d in cur.description] if cur.description else []
-            rows = cur.fetchmany(max_rows + 1) if columns else []
-            elapsed = (dt.datetime.now() - started).total_seconds() * 1000
-            cur.execute("ROLLBACK")
+        cur = conn.cursor(pymysql.cursors.SSCursor)
+        cur.execute("SET SESSION max_execution_time = %s", (timeout_ms,))
+        cur.execute("START TRANSACTION READ ONLY")
+        started = dt.datetime.now()
+        cur.execute(sql)
+        columns = [d[0] for d in cur.description] if cur.description else []
+        rows = cur.fetchmany(max_rows + 1) if columns else []
+        elapsed = (dt.datetime.now() - started).total_seconds() * 1000
         truncated = len(rows) > max_rows
+        if not truncated:
+            cur.execute("ROLLBACK")      # the result is fully read, so the connection is free again
         return {
             "columns": columns,
             "rows": [[jsonable(v) for v in row] for row in rows[:max_rows]],

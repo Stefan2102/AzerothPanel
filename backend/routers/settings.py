@@ -64,7 +64,7 @@ def get(request: Request):
     return _summary(request.app.state.settings)
 
 
-_JOB_SLOTS = ("build_slot", "data_slot", "modules_slot", "dbsetup_slot", "source_slot")
+_JOB_SLOTS = ("build_slot", "data_slot", "modules_slot", "dbsetup_slot", "source_slot", "sqlimport_slot")
 
 
 @router.put("/root")
@@ -80,8 +80,10 @@ def update_root(body: RootBody, request: Request, manager: ServerManager = Depen
     if str(root) != current.root_dir:
         if any(s.proc for s in manager.services.values()):
             raise HTTPException(status_code=409, detail="Stop the servers started by the panel before changing the folder.")
-        if any(getattr(request.app.state, name).busy() for name in _JOB_SLOTS):
-            raise HTTPException(status_code=409, detail="Wait until the running build, clone, module, data or database job has finished.")
+        backup_task = getattr(request.app.state, "backup_task", None)
+        if any(getattr(request.app.state, name).busy() for name in _JOB_SLOTS) or (backup_task and not backup_task.done()):
+            raise HTTPException(status_code=409, detail="Wait until the running build, clone, module, data, database, "
+                                                        "SQL import, backup or restore job has finished.")
     try:
         root.mkdir(parents=True, exist_ok=True)
     except OSError as exc:

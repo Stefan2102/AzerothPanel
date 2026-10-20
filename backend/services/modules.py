@@ -223,7 +223,8 @@ class ModuleJob:
             changed = self._update_one(module_dir(self.source, self.name or ""))
         else:                                                         # update-all
             changed = False
-            folders = [m for m in installed(self.source, None) if not m["broken"] and m["git"]]
+            # git is needed to tell git checkouts from plain folders (without it every module reads as "git": False).
+            folders = [m for m in installed(self.source, str(self.git) if self.git else None) if not m["broken"] and m["git"]]
             for i, m in enumerate(folders):
                 self.log(f"[step] Updating {m['name']}")
                 try:

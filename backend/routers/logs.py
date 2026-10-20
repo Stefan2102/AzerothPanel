@@ -57,7 +57,7 @@ async def follow_log(ws: WebSocket, source: str, offset: int = 0):
             if truncated:
                 await ws.send_text(json.dumps({"t": "reset"}))
             if lines:
-                await ws.send_text(json.dumps({"t": "lines", "d": lines, "offset": follower.offset}))
+                await ws.send_text(json.dumps({"t": "lines", "d": lines, "offset": follower.resume_offset}))
             await asyncio.wait({receiver}, timeout=0.5)
     except (WebSocketDisconnect, RuntimeError):
         pass
