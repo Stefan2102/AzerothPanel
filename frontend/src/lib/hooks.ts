@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { get, post, type ServiceKey, type Status } from "./api";
+import { get, post, type ServiceKey, type Shortcut, type ShortcutsState, type Status } from "./api";
 import { useConfirm, useToast } from "../components/ui";
 
 export function useStatus() {
@@ -61,5 +61,22 @@ export function useServerActions() {
     },
     startAll: () => run("/api/server/start-all", {}, "Starting all servers"),
     stopAll: () => run("/api/server/stop-all", {}, "Stopping all servers"),
+  };
+}
+
+export function useShortcuts() {
+  return useQuery({ queryKey: ["shortcuts"], queryFn: () => get<ShortcutsState>("/api/shortcuts") });
+}
+
+/** Launch a saved shortcut and report it as a toast. */
+export function useLaunchShortcut() {
+  const toast = useToast();
+  return async (s: Shortcut) => {
+    try {
+      await post(`/api/shortcuts/${encodeURIComponent(s.id)}/launch`);
+      toast({ tone: "ok", title: `Started ${s.name}` });
+    } catch (e) {
+      toast({ tone: "bad", title: `Couldn't start ${s.name}`, body: (e as Error).message });
+    }
   };
 }

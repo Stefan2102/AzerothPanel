@@ -89,6 +89,19 @@ export interface Status {
   sqlimport: { id: number; type: string; step: string | null; progress: number; detail?: string | null } | null;
 }
 
+export interface Shortcut {
+  id: string;
+  name: string;
+  path: string;
+  args: string;
+}
+
+export interface ShortcutsState {
+  items: Shortcut[];
+  /** Programs found on this PC; a path may be a folder the user picks the file in. */
+  suggestions: Omit<Shortcut, "id">[];
+}
+
 export interface CommandResult {
   output: string;
   ok: boolean;

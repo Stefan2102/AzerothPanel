@@ -19,7 +19,7 @@ FastAPI  ── ServerManager ── ConPtyProcess ×3 ──► mysqld / authse
 |---|---|
 | `__main__.py` | `run` (foreground), `start` (spawn hidden + open browser), `stop` (control token → safe shutdown, waits for the PID) |
 | `app.py` | App factory, lifespan (monitor start / safe shutdown), error mapping, static frontend |
-| `settings.py` | `data\settings.json`: the AzerothCore folder (`root_dir`; source, build and server have fixed places in it, `LAYOUT`), the MySQL folder (`mysql_dir`, anywhere, chosen on Requirements), port, session hours, world countdown, build-tool overrides |
+| `settings.py` | `data\settings.json`: the AzerothCore folder (`root_dir`; source, build and server have fixed places in it, `LAYOUT`), the MySQL folder (`mysql_dir`, anywhere, chosen on Requirements), port, session hours, world countdown, build-tool overrides, sidebar shortcuts |
 | `acconf.py` | Parses AzerothCore `.conf` (cached by mtime): DB infos, ports, realm, LogsDir, DataDir, SOAP |
 | `services/audit.py` | Action log `data\audit.log` (who, IP, action) shown as Logs -> Panel Actions; rotates at 5 MB |
 | `services/tls.py` | Certificates for the remote listener: self-signed in `data\tls` (EC P-256, this PC's names/IPs) or own files |
@@ -70,6 +70,7 @@ Everything that can be read from AzerothCore's own configs is read, never duplic
 - `/api/source/presets|branches|clone|jobs…` (see source.md)
 - `GET /api/fs/list?path=&files=&ext=`, `POST /api/fs/mkdir {parent, name}` (Browse buttons)
 - `/api/modules/catalogue|installed|install|install-url|update-all|{name}/update`, `DELETE /api/modules/{name}` (see modules.md)
+- `/api/shortcuts` (GET, PUT), `POST /api/shortcuts/{id}/launch` (see shortcuts.md)
 - `/api/settings` (GET; PUT = session hours and world countdown), `PUT /api/settings/root {root_dir}` (refused while
   servers the panel started or any job run; creates the folder), `/api/settings/test`, `PUT /api/settings/soap`, `POST /api/settings/soap/test`
 - WS `/ws/console/{key}` (read-only): `init {run, lines, screen}` then `update {lines, screen}`

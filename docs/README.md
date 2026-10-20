@@ -15,6 +15,7 @@ AzerothCore from source. Overview and quick start: [README](../README.md) in the
 | [build.md](build.md) | Build & Deploy: requirements detection, compiling, deploying (DLLs, configs) |
 | [sql-import.md](sql-import.md) | Database page → Import SQL: run an .sql file against one database (optional backup first) |
 | [config-values.md](config-values.md) | Config Files tabs: Setup (paths, database connection) and Quick settings (common worldserver values) |
+| [shortcuts.md](shortcuts.md) | Sidebar shortcuts: launch the game client, Ollama or any program |
 | [process-control.md](process-control.md) | How servers are started/stopped safely (verified findings) |
 | [findings.md](findings.md) | AzerothCore / MySQL facts the panel relies on, with sources |
 

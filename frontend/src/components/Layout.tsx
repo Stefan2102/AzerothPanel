@@ -1,9 +1,9 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import {
-  Archive, Database, Download, FileCog, FileText, Hammer, HardDrive, LayoutDashboard, Package, Loader2, LogOut, Power, Server, Settings, Shield, Terminal, Users,
+  AppWindow, Archive, Database, Download, FileCog, FileText, Hammer, HardDrive, LayoutDashboard, Package, Loader2, LogOut, Power, Server, Settings, Shield, Terminal, Users,
 } from "lucide-react";
 import { get, post, SERVICE_ORDER } from "../lib/api";
-import { useStatus } from "../lib/hooks";
+import { useLaunchShortcut, useShortcuts, useStatus } from "../lib/hooks";
 import { cx, useConfirm, useToast } from "./ui";
 
 const NAV: { section: string; items: { to: string; label: string; icon: ReactNode }[] }[] = [
@@ -106,6 +106,8 @@ function useFinishedToast(kind: BackgroundKind, id: number | null) {
 
 export function Layout({ route, username, children, onLogout }: { route: string; username: string; children: ReactNode; onLogout: () => void }) {
   const { data: status } = useStatus();
+  const { data: shortcuts } = useShortcuts();
+  const launch = useLaunchShortcut();
   const toast = useToast();
   const confirm = useConfirm();
   const lastJob = useRef<number | null>(null);
@@ -180,6 +182,28 @@ export function Layout({ route, username, children, onLogout }: { route: string;
               })}
             </div>
           ))}
+          <div className="mt-3">
+            <div className="flex items-center justify-between px-2 pb-1.5">
+              <span className="label-caps !text-[10.5px] !text-faint">Shortcuts</span>
+              <a href="#/shortcuts" className={cx("text-[11px] hover:text-text", route === "/shortcuts" ? "text-accent-text" : "text-faint")}>
+                Manage
+              </a>
+            </div>
+            {shortcuts?.items.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => launch(s)}
+                title={`Start ${s.path}${s.args ? ` ${s.args}` : ""}`}
+                className="mb-0.5 flex h-9 w-full items-center gap-2.5 rounded-lg px-2.5 text-left text-[13px] text-muted transition-colors hover:bg-card-2 hover:text-text"
+              >
+                <AppWindow className="size-4 shrink-0" />
+                <span className="truncate">{s.name}</span>
+              </button>
+            ))}
+            {shortcuts && shortcuts.items.length === 0 && (
+              <a href="#/shortcuts" className="block px-2.5 py-1.5 text-xs text-faint hover:text-text">Add a shortcut</a>
+            )}
+          </div>
         </nav>
         <div className="border-t border-line px-3 py-3">
           <div className="px-2 pb-2 text-xs text-faint">

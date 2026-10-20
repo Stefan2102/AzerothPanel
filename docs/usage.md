@@ -98,6 +98,9 @@
   modules folder; Installed tab: Update / Update All / Remove, or install from a Git URL. Rebuild afterwards
   (a banner reminds you). See [modules.md](modules.md).
 
+- Shortcuts (sidebar): start the game client, Ollama or any program with one click; **Manage** adds, edits
+  and removes them. They start like a double-click and the panel never stops them. See [shortcuts.md](shortcuts.md).
+
 - Every folder or file field has **Browse**: a folder browser of the PC the panel runs on (drives, folders, Up,
   New folder). It also works from another device when remote access is on. A web page can't open Windows' own
   folder dialog.

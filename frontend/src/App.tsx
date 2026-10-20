@@ -38,6 +38,7 @@ const Setup = lazyPage(() => import("./pages/Setup"), "Setup");
 const Compilation = lazyPage(() => import("./pages/Compilation"), "Compilation");
 const DataExtraction = lazyPage(() => import("./pages/DataExtraction"), "DataExtraction");
 const Modules = lazyPage(() => import("./pages/Modules"), "Modules");
+const Shortcuts = lazyPage(() => import("./pages/Shortcuts"), "Shortcuts");
 
 const PAGES: Record<string, ComponentType> = {
   "/": Dashboard,
@@ -53,6 +54,7 @@ const PAGES: Record<string, ComponentType> = {
   "/modules": Modules,
   "/configs": Configs,
   "/settings": Settings,
+  "/shortcuts": Shortcuts,
 };
 
 /** Pages that need the AzerothCore folder to be set. */

@@ -50,6 +50,8 @@ class Settings:
     # path values (DataDir, LogsDir, MySQLExecutable) changed on Config Files (missing key = default).
     db_connection: dict = field(default_factory=dict)
     config_paths: dict = field(default_factory=dict)
+    # Sidebar shortcuts [{id, name, path, args}] (services/shortcuts.py); launched like a double-click.
+    shortcuts: list = field(default_factory=list)
 
     def _part(self, key: str) -> Path:
         return Path(self.root_dir) / LAYOUT[key]

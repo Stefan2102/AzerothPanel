@@ -10,7 +10,7 @@ from fastapi.staticfiles import StaticFiles
 
 from . import security
 from .paths import FRONTEND_DIST
-from .routers import auth, backups, build, client_data as client_data_router, config_values, configs, console, quick_settings, sql_import as sql_import_router, database, database_setup, fs, logs, modules as modules_router, players, server, settings, source_setup
+from .routers import auth, backups, build, client_data as client_data_router, config_values, configs, console, quick_settings, sql_import as sql_import_router, database, database_setup, fs, logs, modules as modules_router, players, server, settings, shortcuts, source_setup
 from .services import audit
 from .services import build as build_service, client_data, clone, modules, mysql_setup, sql_import
 from .services.jobs import JobSlot
@@ -75,7 +75,7 @@ def create_app(initial_settings: Settings, control_token: str) -> FastAPI:
         app.state.request_exit()
         return {"ok": True}
 
-    for module in (auth, server, console, players, logs, database, backups, build, client_data_router, modules_router, database_setup, source_setup, fs, config_values, quick_settings, sql_import_router, configs, settings):
+    for module in (auth, server, console, players, logs, database, backups, build, client_data_router, modules_router, database_setup, source_setup, fs, config_values, quick_settings, sql_import_router, configs, settings, shortcuts):
         app.include_router(module.router)
 
     if FRONTEND_DIST.is_dir():
