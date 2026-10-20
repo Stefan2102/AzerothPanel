@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+/* Theme tokens (dark only). */
+:root {
+  --bg: #0b0c10;
+  --sidebar: #101117;
+  --card: #15161e;
+  --card-2: #1b1c26;
+  --line: #262735;
+  --line-strong: #353748;
+  --text: #e7e8ef;
+  --muted: #8a8ca0;
+  --faint: #5d5f72;
+  --accent: #8b7cf6;
+  --accent-soft: #231f3d;
+  --accent-text: #b2a8ff;
+  --ok: #3fcf8e;
+  --ok-soft: #10261b;
+  --ok-line: #1c5a3a;
+  --bad: #f27474;
+  --bad-soft: #2a1416;
+  --bad-line: #5c2427;
+  --warn: #e9b44c;
+  --warn-soft: #2a2110;
+  --warn-line: #5b4517;
+  --term-bg: #0d0e13;
+  color-scheme: dark;
+}
+
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-text: var(--accent-text);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-ok-line: var(--ok-line);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --color-bad-line: var(--bad-line);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-line: var(--warn-line);
+  --color-term: var(--term-bg);
+  --font-sans: "Inter", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", "Cascadia Code", Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Tailwind v4 resets buttons to the default arrow cursor; clickable things should show the hand. */
+button:not(:disabled),
+[role="button"],
+a[href] {
+  cursor: pointer;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--line-strong) transparent;
+}
+
+.label-caps {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.cm-editor {
+  height: 100%;
+  font-size: 13px;
+}
+.cm-editor.cm-focused {
+  outline: none;
+}
+.cm-scroller {
+  font-family: var(--font-mono) !important;
+}
+
+
+@keyframes acp-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.pulse {
+  animation: acp-pulse 1.4s ease-in-out infinite;
+}
