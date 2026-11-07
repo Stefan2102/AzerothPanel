@@ -22,7 +22,6 @@ from pathlib import Path
 from typing import Callable
 
 from ..paths import DATA_DIR
-from . import pe
 from .jobs import JobError, JobStore, LogFn, ProcessRunner
 
 TYPES = ("dbc", "maps", "vmaps", "mmaps")            # tiles on the page; Cameras travels with dbc
@@ -30,7 +29,6 @@ REQUIRED = ("dbc", "maps", "vmaps")
 RELEASES = "https://github.com/wowgaming/client-data/releases"
 LATEST_API = "https://api.github.com/repos/wowgaming/client-data/releases/latest"
 VERSION_FILE = "data-version"                        # same file and format as AzerothCore's own installer
-CLIENT_BUILD = "3.3.5.12340"
 TOOLS = ("map_extractor.exe", "vmap4_extractor.exe", "vmap4_assembler.exe", "mmaps_generator.exe")
 MAP_EXTRACT_FLAGS = {"maps": 1, "dbc": 2 | 4}         # map_extractor -e: MAP(1) / DBC(2) / Camera(4)
 CHUNK = 1024 * 1024
@@ -83,20 +81,21 @@ def tools_present(server_dir: Path) -> dict[str, bool]:
     return {t: (server_dir / t).is_file() for t in TOOLS}
 
 
-def check_client(path: Path) -> tuple[str | None, list[str]]:
-    """(client build, problems). A 3.3.5a client has Wow.exe 3.3.5.12340 and Data\\*.MPQ."""
-    problems = []
-    exe = path / "Wow.exe"
-    build = None
-    if not exe.is_file():
-        problems.append(f"No Wow.exe in {path}.")
-    else:
-        build = pe.version_info(exe)["version"]
-        if build != f"{CLIENT_BUILD}":
-            problems.append(f"Wow.exe is version {build or 'unknown'}, the server needs {CLIENT_BUILD} (3.3.5a).")
-    if not any((path / "Data").glob("*.MPQ")) and not any((path / "Data").glob("*.mpq")):
-        problems.append(f"No Data\\*.MPQ files in {path}.")
-    return build, problems
+def check_client(path: Path) -> list[str]:
+    """Problems with a client folder ([] = usable). Judged by its Data folder only, which is all the
+    extractor tools read: the exe may be renamed (patched clients) or missing. A WotLK client has
+    Data\\lichking.MPQ; Cataclysm and later have Data\\wow-update-*.MPQ (or no MPQs at all, CASC).
+    The exact build (12340) is checked by the extractors themselves and shown in the job log."""
+    data = path / "Data"
+    # Windows globbing ignores case, so *.MPQ also finds *.mpq.
+    mpqs = {p.name.lower() for p in data.glob("*.MPQ")} if data.is_dir() else set()
+    if not mpqs:
+        return [f"No Data\\*.MPQ files in {path}. Choose the WoW 3.3.5a client folder (the one with Data\\)."]
+    if any(name.startswith("wow-update-") for name in mpqs):
+        return [f"{path} is a newer client (Cataclysm or later, it has Data\\wow-update-*.MPQ). The server needs 3.3.5a."]
+    if "lichking.mpq" not in mpqs:
+        return [f"{path} isn't a 3.3.5a client: Data\\lichking.MPQ is missing."]
+    return []
 
 
 # ---- swapping data in --------------------------------------------------------------------------------
@@ -363,8 +362,7 @@ class ExtractJob(_Job):
             self.log(f"[step] Installing into {self.data_dir}")
             swap_in(self.data_dir, work, sorted(produced), self.log)
             # The data no longer is a downloaded release; record where it came from instead.
-            build = (pe.version_info(self.client / "Wow.exe")["version"] or "").rsplit(".", 1)[-1] or "unknown"
-            (self.data_dir / VERSION_FILE).write_text(f"INSTALLED_VERSION=client-{build}\n", encoding="utf-8")
+            (self.data_dir / VERSION_FILE).write_text("INSTALLED_VERSION=client\n", encoding="utf-8")
         finally:
             _remove_work(work)
         self._set(step="done", progress=100)

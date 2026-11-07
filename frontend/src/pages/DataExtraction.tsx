@@ -46,8 +46,9 @@ const MB = 1024 * 1024;
 // ---- status ----------------------------------------------------------------------------------------------
 
 function StatusCard({ s }: { s: DataStatus }) {
-  // Only a downloaded release (v20.0, ...) can be compared; extracted data says "client-12340".
-  const fromClient = s.installed_version?.startsWith("client-");
+  // Only a downloaded release (v20.0, ...) can be compared; extracted data says "client" (older panels: "client-12340").
+  const fromClient = s.installed_version === "client" || s.installed_version?.startsWith("client-");
+  const clientBuild = fromClient ? s.installed_version!.slice("client-".length) : "";
   const versionMismatch = s.pinned_version && s.installed_version && !fromClient && s.pinned_version !== s.installed_version;
   return (
     <Card>
@@ -76,9 +77,8 @@ function StatusCard({ s }: { s: DataStatus }) {
         </div>
         <div className="flex flex-wrap gap-x-6 text-xs text-muted">
           <span>
-            {fromClient ? "Extracted from a client (build " : "Installed release: "}
-            <span className="text-text">{fromClient ? s.installed_version!.slice("client-".length) : s.installed_version ?? "unknown"}</span>
-            {fromClient && ")"}
+            {fromClient ? <span className="text-text">Extracted from a client{clientBuild && ` (build ${clientBuild})`}</span>
+              : <>Installed release: <span className="text-text">{s.installed_version ?? "unknown"}</span></>}
           </span>
           {s.pinned_version && <span>Your AzerothCore source expects: <span className="text-text">{s.pinned_version}</span></span>}
         </div>
@@ -193,7 +193,7 @@ function ExtractPanel({ s, blocked, onStarted }: { s: DataStatus; blocked: strin
     <Card>
       <CardHeader title="Extract from Local Client" subtitle="Uses the extractor tools in your server folder" />
       <div className="space-y-4 p-4">
-        <Field label="Client folder" hint="The folder with Wow.exe (3.3.5a, build 12340) and Data\">
+        <Field label="Client folder" hint="The WoW 3.3.5a client folder (the one with Data\)">
           <PathInput value={client} onChange={setClient} placeholder="C:\Games\World of Warcraft 3.3.5a" title="Choose your WoW 3.3.5a folder" />
         </Field>
         <div>

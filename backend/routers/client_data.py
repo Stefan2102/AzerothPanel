@@ -99,7 +99,7 @@ async def extract(body: ExtractBody, request: Request, cfg: ServerConfig = Depen
     client = Path(body.client_dir.strip().strip('"'))
     if not client.is_absolute() or not client.is_dir():
         raise HTTPException(status_code=422, detail="Enter the full path of your WoW 3.3.5a folder.")
-    _, problems = await asyncio.to_thread(client_data.check_client, client)
+    problems = await asyncio.to_thread(client_data.check_client, client)
     if problems:
         raise HTTPException(status_code=422, detail=" ".join(problems))
     tools = client_data.tools_present(settings.server_path)

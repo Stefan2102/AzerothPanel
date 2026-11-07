@@ -35,8 +35,10 @@ Sidebar: Build & Deploy -> **Data Extraction**. Worldserver reads `dbc`, `maps`,
 5. Write `data-version`, then delete the zip.
 
 ## Extract from Local Client
-- **Client check:** `Wow.exe` must have file version `3.3.5.12340`, read from its version resource, and
-  `Data\*.MPQ` must exist. Other clients are refused, for example Legion is 7.3.5.26972.
+- **Client check:** by the `Data` folder only, since that is all the extractor tools read. The exe isn't
+  looked at, so a renamed (patched) or missing `Wow.exe` is fine. Refused: no `Data\*.MPQ` (also every
+  CASC client, 6.x+), `Data\wow-update-*.MPQ` present (Cataclysm and later), or no `Data\lichking.MPQ`
+  (not WotLK). The exact build (12340) is checked by the extractors themselves and shows in the job log.
 - **Tools** come from the server folder and are deployed when compiled with Tools = all:
   `map_extractor`, `vmap4_extractor`, `vmap4_assembler`, `mmaps_generator`.
 - **Steps**, all run in the work folder `<server>\.client-data-extract`:
@@ -59,7 +61,7 @@ Sidebar: Build & Deploy -> **Data Extraction**. Worldserver reads `dbc`, `maps`,
     modified.
 - **Install:** only the produced folders are swapped in, the same way as for a download. Data types you
   didn't select stay as they are.
-- **Version file:** `data-version` then says `INSTALLED_VERSION=client-12340`. The page shows "Extracted from a client"
+- **Version file:** `data-version` then says `INSTALLED_VERSION=client` (older panel versions wrote `client-12340`). The page shows "Extracted from a client"
   and compares release versions only for downloaded data.
 
 ## Jobs
